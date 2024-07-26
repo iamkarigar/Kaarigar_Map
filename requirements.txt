@@ -5,3 +5,4 @@ olamaps
 haversine
 flask-smorest
 geopy
+requests
