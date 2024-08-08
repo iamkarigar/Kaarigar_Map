@@ -19,16 +19,17 @@ db = client['test']
 labor_collection = db.get_collection('labors')
 workers = []
 for worker in labor_collection.find():
-  if 'location' in worker and 'latitude' in worker['location'] and 'longitude' in worker['location']:
-
-    workers.append({
-            'name': worker['name'],
-            'service_category': worker['designation'],
-            'location': (worker['location']['latitude'], worker['location']['longitude']),
-            'ratePerHour': worker['ratePerHour'],
-            'phone': worker['phone'],
-            'address': worker['address']
-        })
+    if 'location' in worker and 'latitude' in worker['location'] and 'longitude' in worker['location']:
+        is_available = all(order.get('unavailable', True) is False for order in worker.get('order', []))
+        if is_available:
+            workers.append({
+                'name': worker['name'],
+                'service_category': worker['designation'],
+                'location': (worker['location']['latitude'], worker['location']['longitude']),
+                'ratePerHour': worker['ratePerHour'],
+                'phone': worker['phone'],
+                'address': worker['address']
+            })
     
 @app.post("/nearby_workers")
 def get_nearby_workers():
