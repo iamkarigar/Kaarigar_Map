@@ -20,7 +20,7 @@ labor_collection = db.get_collection('labors')
 workers = []
 for worker in labor_collection.find():
     if 'location' in worker and 'latitude' in worker['location'] and 'longitude' in worker['location']:
-        is_available = all(order.get('unavailable', True) is False for order in worker.get('order', []))
+        is_available = worker.get('avalablity_status', False) is True
         if is_available:
             workers.append({
                 'name': worker['name'],
