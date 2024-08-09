@@ -46,24 +46,17 @@ def get_nearby_workers():
     user_coords = (geocode_results[0]['geometry']['location']['lat'], geocode_results[0]['geometry']['location']['lng'])
     nearby_workers = []
 
-    # Debugging output to trace the process
-    print(f"User Coordinates: {user_coords}")
-
-    for worker in workers:
+    for worker in workers:  # Ensure this workers list is the one with correct data
         if worker['service_category'] == user_data['service_category']:
             worker_coords = worker['location']
             distance = haversine(user_coords, worker_coords, unit=Unit.KILOMETERS)
-            
-            print(f"Worker: {worker['name']}, Worker Coordinates: {worker_coords}, Distance: {distance} km")
 
             if distance <= 10:  # Example threshold for nearby workers (10 km)
                 worker['distance'] = distance
                 nearby_workers.append(worker)
 
-    # Debugging output for nearby workers
-    print(f"Nearby Workers: {nearby_workers}")
-
     return {'nearby_workers': nearby_workers}
+
 
 @app.post("/navigation")
 def get_directions():
