@@ -97,7 +97,7 @@ def get_directions():
       except Exception as e:
           print(f"Error in tracking person: {e}")
           return None
-    direction = track_person(start_pos, end_pos)
+    direction = track_person(user_data['start_pos'], end_pos)
     if direction is None:
         abort(500, message="Could not retrieve directions from Ola Maps API.")
 
