@@ -72,7 +72,6 @@ def get_directions():
         except Exception as e:
             print(f"Error in geocoding {address}: {e}")
             return None
-    start_pos = get_location(user_data['start_point'])
     end_pos = get_location(user_data['end_point'])
     if not start_pos:
         abort(404, message=f"Could not find location for start point: {user_data['start_point']}")
