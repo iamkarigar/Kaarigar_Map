@@ -6,3 +6,4 @@ haversine
 flask-smorest
 geopy
 requests
+googlemaps
