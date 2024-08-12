@@ -14,6 +14,7 @@ load_dotenv()
 app = Flask(__name__)
 MONGODB_URI = os.getenv('MONGODB_URI')
 OLA_MAPS_KEY = os.getenv('OLA_MAPS_KEY')
+Google_Maps_KEY = os.getenv('Google_Maps_KEY')
 client = MongoClient(MONGODB_URI)
 databases = client.list_database_names()
 db = client['test']
@@ -39,12 +40,15 @@ def get_nearby_workers():
         abort(404, message="Bad Request. User's location and service category are required.")
 
     # Geocode the user's location
-    client1 = Client(api_key=OLA_MAPS_KEY)
+    client1 = googlemaps.Client(api_key=Google_Maps_KEY)
     geocode_results = client1.geocode(user_data['location'])
     if not geocode_results:
         abort(404, "Geocode results not found.")
     
-    user_coords = (geocode_results[0]['geometry']['location']['lat'], geocode_results[0]['geometry']['location']['lng'])
+    user_coords = (
+        geocode_results[0]['geometry']['location']['lat'], 
+        geocode_results[0]['geometry']['location']['lng']
+    )
     nearby_workers = []
 
     for worker in workers:  # Ensure this workers list is the one with correct data
