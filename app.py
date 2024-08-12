@@ -48,7 +48,7 @@ def get_nearby_workers():
         geocode_results[0]['geometry']['location']['lng']
     )
     
-       nearby_workers = []
+    nearby_workers = []
 
     for worker in workers:
         if worker['service_category'] == user_data['service_category']:
