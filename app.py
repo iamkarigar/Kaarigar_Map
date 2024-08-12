@@ -5,6 +5,7 @@ from flask import Flask ,request
 from flask_smorest import abort
 from dotenv import load_dotenv
 import googlemaps
+from olamaps import Client
 from haversine import haversine, Unit
 from geopy.distance import geodesic
 
@@ -12,7 +13,7 @@ load_dotenv()
 
 app = Flask(__name__)
 MONGODB_URI = os.getenv('MONGODB_URI')
-Google_MAPS_KEY = os.getenv('Google_MAPS_KEY')
+OLA_MAPS_KEY = os.getenv('OLA_MAPS_KEY')
 client = MongoClient(MONGODB_URI)
 databases = client.list_database_names()
 db = client['test']
@@ -37,36 +38,25 @@ def get_nearby_workers():
     if 'location' not in user_data or 'service_category' not in user_data:
         abort(404, message="Bad Request. User's location and service category are required.")
 
-    try:
-        client1 = googlemaps.Client(api_key=Google_MAPS_KEY)
-        geocode_results = client1.geocode(user_data['location'])
-        if not geocode_results or len(geocode_results) == 0:
-            abort(404, "Geocode results not found.")
-    except Exception as e:
-        abort(500, message=f"Error with Google Maps API: {str(e)}")
-
+    # Geocode the user's location
+    client1 = Client(api_key=OLA_MAPS_KEY)
+    geocode_results = client1.geocode(user_data['location'])
+    if not geocode_results:
+        abort(404, "Geocode results not found.")
     
-    # Extract the user's coordinates from the geocode result
-    user_coords = (
-        geocode_results[0]['geometry']['location']['lat'], 
-        geocode_results[0]['geometry']['location']['lng']
-    )
-    
+    user_coords = (geocode_results[0]['geometry']['location']['lat'], geocode_results[0]['geometry']['location']['lng'])
     nearby_workers = []
 
-    for worker in workers:
+    for worker in workers:  # Ensure this workers list is the one with correct data
         if worker['service_category'] == user_data['service_category']:
-            worker_coords = worker['location'] 
-            
-            if isinstance(worker_coords, tuple) and len(worker_coords) == 2:
-                distance = haversine(user_coords, worker_coords, unit=Unit.KILOMETERS)
-                
-                if distance <= 10:  # Example threshold for nearby workers (10 km)
-                    worker['distance'] = distance
-                    nearby_workers.append(worker)
+            worker_coords = worker['location']
+            distance = haversine(user_coords, worker_coords, unit=Unit.KILOMETERS)
+
+            if distance <= 10:  # Example threshold for nearby workers (10 km)
+                worker['distance'] = distance
+                nearby_workers.append(worker)
 
     return {'nearby_workers': nearby_workers}
-
 
 
 # @app.post("/navigation")
