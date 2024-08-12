@@ -37,10 +37,14 @@ def get_nearby_workers():
     if 'location' not in user_data or 'service_category' not in user_data:
         abort(404, message="Bad Request. User's location and service category are required.")
 
-    client1 = googlemaps.Client(api_key=Google_MAPS_KEY)
-    geocode_results = client1.geocode(user_data['location'])
-    if not geocode_results or len(geocode_results) == 0:
-        abort(404, "Geocode results not found.")
+    try:
+        client1 = googlemaps.Client(api_key=Google_MAPS_KEY)
+        geocode_results = client1.geocode(user_data['location'])
+        if not geocode_results or len(geocode_results) == 0:
+            abort(404, "Geocode results not found.")
+    except Exception as e:
+        abort(500, message=f"Error with Google Maps API: {str(e)}")
+
     
     # Extract the user's coordinates from the geocode result
     user_coords = (
