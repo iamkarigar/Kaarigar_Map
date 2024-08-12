@@ -50,9 +50,9 @@ def get_nearby_workers():
     
        nearby_workers = []
 
-    for worker in workers:  # Ensure this workers list is the one with correct data
+    for worker in workers:
         if worker['service_category'] == user_data['service_category']:
-            worker_coords = worker['location']  # Assuming worker['location'] is a tuple (lat, lng)
+            worker_coords = worker['location'] 
             
             if isinstance(worker_coords, tuple) and len(worker_coords) == 2:
                 distance = haversine(user_coords, worker_coords, unit=Unit.KILOMETERS)
@@ -65,52 +65,52 @@ def get_nearby_workers():
 
 
 
-@app.post("/navigation")
-def get_directions():
-    user_data = request.get_json()
-    if 'start_point' not in user_data or 'end_point' not in user_data:
-        abort(404, message="Bad Request. 'start_point' and 'end_point' are required.")
+# @app.post("/navigation")
+# def get_directions():
+#     user_data = request.get_json()
+#     if 'start_point' not in user_data or 'end_point' not in user_data:
+#         abort(404, message="Bad Request. 'start_point' and 'end_point' are required.")
     
-    client2 = Client(api_key=OLA_MAPS_KEY)
+#     client2 = Client(api_key=OLA_MAPS_KEY)
     
-    # Assume start_pos is directly provided as latitude and longitude
-    start_pos = user_data['start_point']  # Expecting a dictionary with 'lat' and 'lng' keys
-    if not isinstance(start_pos, dict) or 'lat' not in start_pos or 'lng' not in start_pos:
-        abort(404, message="Bad Request. 'start_point' must be a dictionary with 'lat' and 'lng' keys.")
+#     # Assume start_pos is directly provided as latitude and longitude
+#     start_pos = user_data['start_point']  # Expecting a dictionary with 'lat' and 'lng' keys
+#     if not isinstance(start_pos, dict) or 'lat' not in start_pos or 'lng' not in start_pos:
+#         abort(404, message="Bad Request. 'start_point' must be a dictionary with 'lat' and 'lng' keys.")
     
-    # Geocode the end_point
-    end_pos = client2.geocode(user_data['end_point'])
-    if not end_pos:
-        abort(404, message=f"Could not find location for end point: {user_data['end_point']}")
-    end_pos = (end_pos[0]['geometry']['location']['lat'], end_pos[0]['geometry']['location']['lng'])
+#     # Geocode the end_point
+#     end_pos = client2.geocode(user_data['end_point'])
+#     if not end_pos:
+#         abort(404, message=f"Could not find location for end point: {user_data['end_point']}")
+#     end_pos = (end_pos[0]['geometry']['location']['lat'], end_pos[0]['geometry']['location']['lng'])
     
-    def get_distance(starting, ending):
-        try:
-            distance = geodesic(starting, ending).kilometers
-            return distance
-        except Exception as e:
-            print(f"Error calculating distance: {e}")
-            return None
+#     def get_distance(starting, ending):
+#         try:
+#             distance = geodesic(starting, ending).kilometers
+#             return distance
+#         except Exception as e:
+#             print(f"Error calculating distance: {e}")
+#             return None
     
-    distance = get_distance((start_pos['lat'], start_pos['lng']), end_pos)
+#     distance = get_distance((start_pos['lat'], start_pos['lng']), end_pos)
     
-    def track_person(start, end):
-        url = f"https://api.olamaps.io/routing/v1/directions?origin={start[0]},{start[1]}&destination={end[0]},{end[1]}&api_key={OLA_MAPS_KEY}"
-        try:
-            response = requests.post(url)
-            if response.status_code == 200:
-                return response.json()
-            else:
-                raise Exception(f"Error fetching directions: {response.status_code}")
-        except Exception as e:
-            print(f"Error in tracking person: {e}")
-            return None
+#     def track_person(start, end):
+#         url = f"https://api.olamaps.io/routing/v1/directions?origin={start[0]},{start[1]}&destination={end[0]},{end[1]}&api_key={OLA_MAPS_KEY}"
+#         try:
+#             response = requests.post(url)
+#             if response.status_code == 200:
+#                 return response.json()
+#             else:
+#                 raise Exception(f"Error fetching directions: {response.status_code}")
+#         except Exception as e:
+#             print(f"Error in tracking person: {e}")
+#             return None
     
-    direction = track_person((start_pos['lat'], start_pos['lng']), end_pos)
-    if direction is None:
-        abort(500, message="Could not retrieve directions from Ola Maps API.")
+#     direction = track_person((start_pos['lat'], start_pos['lng']), end_pos)
+#     if direction is None:
+#         abort(500, message="Could not retrieve directions from Ola Maps API.")
     
-    return {'distance': distance, 'directions': direction}
+#     return {'distance': distance, 'directions': direction}
 
 if __name__ == "__main__":
     app.run(debug=True)
