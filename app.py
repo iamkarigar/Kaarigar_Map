@@ -14,7 +14,7 @@ load_dotenv()
 app = Flask(__name__)
 MONGODB_URI = os.getenv('MONGODB_URI')
 OLA_MAPS_KEY = os.getenv('OLA_MAPS_KEY')
-Google_Maps_KEY = "AIzaSyBskEE_RW6isVnvbkjbQVOWkT7GenScNUY"
+Google_Maps_KEY = os.getenv('Google_Maps_KEY')
 client = MongoClient(MONGODB_URI)
 databases = client.list_database_names()
 db = client['test']
@@ -63,53 +63,57 @@ def get_nearby_workers():
     return {'nearby_workers': nearby_workers}
 
 
-# @app.post("/navigation")
-# def get_directions():
-#     user_data = request.get_json()
-#     if 'start_point' not in user_data or 'end_point' not in user_data:
-#         abort(404, message="Bad Request. 'start_point' and 'end_point' are required.")
+@app.post("/navigation")
+def get_directions():
+    user_data = request.get_json()
+    if 'start_point' not in user_data or 'end_point' not in user_data:
+        abort(404, description="Bad Request. 'start_point' and 'end_point' are required.")
     
-#     client2 = Client(api_key=OLA_MAPS_KEY)
+    gmaps = googlemaps.Client(key=Google_Maps_KEY)
+
+    # Assume start_pos is directly provided as latitude and longitude
+    start_pos = user_data['start_point']  # Expecting a dictionary with 'lat' and 'lng' keys
+    if not isinstance(start_pos, dict) or 'lat' not in start_pos or 'lng' not in start_pos:
+        abort(404, description="Bad Request. 'start_point' must be a dictionary with 'lat' and 'lng' keys.")
     
-#     # Assume start_pos is directly provided as latitude and longitude
-#     start_pos = user_data['start_point']  # Expecting a dictionary with 'lat' and 'lng' keys
-#     if not isinstance(start_pos, dict) or 'lat' not in start_pos or 'lng' not in start_pos:
-#         abort(404, message="Bad Request. 'start_point' must be a dictionary with 'lat' and 'lng' keys.")
+    # Geocode the end_point
+    end_pos = gmaps.geocode(user_data['end_point'])
+    if not end_pos:
+        abort(404, description=f"Could not find location for end point: {user_data['end_point']}")
+    end_pos = (end_pos[0]['geometry']['location']['lat'], end_pos[0]['geometry']['location']['lng'])
+
+    def get_distance(starting, ending):
+        try:
+            distance = geodesic(starting, ending).kilometers
+            return distance
+        except Exception as e:
+            print(f"Error calculating distance: {e}")
+            return None
     
-#     # Geocode the end_point
-#     end_pos = client2.geocode(user_data['end_point'])
-#     if not end_pos:
-#         abort(404, message=f"Could not find location for end point: {user_data['end_point']}")
-#     end_pos = (end_pos[0]['geometry']['location']['lat'], end_pos[0]['geometry']['location']['lng'])
+    distance = get_distance((start_pos['lat'], start_pos['lng']), end_pos)
     
-#     def get_distance(starting, ending):
-#         try:
-#             distance = geodesic(starting, ending).kilometers
-#             return distance
-#         except Exception as e:
-#             print(f"Error calculating distance: {e}")
-#             return None
+    def track_person(start, end):
+        try:
+            directions_result = gmaps.directions(
+                origin=(start[0], start[1]),
+                destination=(end[0], end[1]),
+                mode='transit',
+                departure_time='now'
+            )
+            if directions_result:
+                return directions_result
+            else:
+                raise Exception("No directions found.")
+        except Exception as e:
+            print(f"Error in tracking person: {e}")
+            return None
     
-#     distance = get_distance((start_pos['lat'], start_pos['lng']), end_pos)
+    direction = track_person((start_pos['lat'], start_pos['lng']), end_pos)
+    if direction is None:
+        abort(500, description="Could not retrieve directions from Google Maps API.")
     
-#     def track_person(start, end):
-#         url = f"https://api.olamaps.io/routing/v1/directions?origin={start[0]},{start[1]}&destination={end[0]},{end[1]}&api_key={OLA_MAPS_KEY}"
-#         try:
-#             response = requests.post(url)
-#             if response.status_code == 200:
-#                 return response.json()
-#             else:
-#                 raise Exception(f"Error fetching directions: {response.status_code}")
-#         except Exception as e:
-#             print(f"Error in tracking person: {e}")
-#             return None
-    
-#     direction = track_person((start_pos['lat'], start_pos['lng']), end_pos)
-#     if direction is None:
-#         abort(500, message="Could not retrieve directions from Ola Maps API.")
-    
-#     return {'distance': distance, 'directions': direction}
+    return {'distance': distance, 'directions': direction}
+
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 8000)), debug=False)
-
