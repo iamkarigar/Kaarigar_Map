@@ -40,7 +40,7 @@ def get_nearby_workers():
         abort(404, message="Bad Request. User's location and service category are required.")
 
     # Geocode the user's location
-    client1 = googlemaps.Client(api_key=Google_Maps_KEY)
+    client1 = googlemaps.Client(key=Google_Maps_KEY)
     geocode_results = client1.geocode(user_data['location'])
     if not geocode_results:
         abort(404, "Geocode results not found.")
