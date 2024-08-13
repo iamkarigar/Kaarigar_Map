@@ -14,7 +14,7 @@ load_dotenv()
 app = Flask(__name__)
 MONGODB_URI = os.getenv('MONGODB_URI')
 OLA_MAPS_KEY = os.getenv('OLA_MAPS_KEY')
-Google_Maps_KEY = os.getenv('Google_Maps_KEY')
+Google_Maps_KEY = "AIzaSyBskEE_RW6isVnvbkjbQVOWkT7GenScNUY"
 client = MongoClient(MONGODB_URI)
 databases = client.list_database_names()
 db = client['test']
