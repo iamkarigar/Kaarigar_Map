@@ -32,6 +32,9 @@ for worker in labor_collection.find():
                 'phone': worker['phone'],
                 'address': worker['address']
             })
+@app.errorhandler(404)
+def not_found(error):
+    return jsonify({"error": "Directions not found. Please check the locations and try again."}), 404
     
 @app.post("/nearby_workers")
 def get_nearby_workers():
@@ -79,7 +82,7 @@ def get_directions():
     # Geocode the end_point
     end_pos = gmaps.geocode(user_data['end_point'])
     if not end_pos:
-        abort(404, description=f"Could not find location for end point: {user_data['end_point']}")
+        abort(404)
     end_pos = (end_pos[0]['geometry']['location']['lat'], end_pos[0]['geometry']['location']['lng'])
 
     def get_distance(starting, ending):
