@@ -97,7 +97,7 @@ def get_directions():
             directions_result = gmaps.directions(
                 origin=(start[0], start[1]),
                 destination=(end[0], end[1]),
-                mode='transit',
+                mode='walking',
                 departure_time='now'
             )
             if directions_result:
@@ -110,7 +110,7 @@ def get_directions():
     
     direction = track_person((start_pos['lat'], start_pos['lng']), end_pos)
     if direction is None:
-        abort(500, description="Could not retrieve directions from Google Maps API.")
+        abort(404, description="Directions not found. Please check the locations and try again.")
     
     return {'distance': distance, 'directions': direction}
 
