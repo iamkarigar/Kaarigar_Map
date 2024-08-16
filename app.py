@@ -56,7 +56,12 @@ def get_nearby_workers():
 
     for worker in workers:  # Ensure this workers list is the one with correct data
         if worker['service_category'] == user_data['service_category']:
-            worker_coords = worker['location']
+            worker_address = worker['address']
+            geocode_results1 = client1.geocode(worker_address)
+            worker_coords = (
+                geocode_results1[0]['geometry']['location']['lat'],
+                geocode_results1[0]['geometry']['location']['lng']
+            )
             distance = haversine(user_coords, worker_coords, unit=Unit.KILOMETERS)
 
             if distance <= 10:  # Example threshold for nearby workers (10 km)
