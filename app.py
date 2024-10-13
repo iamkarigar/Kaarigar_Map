@@ -25,6 +25,7 @@ def fetch_workers_from_api():
         workers_data = response.json()
         if workers_data['success']:
             workers = []
+            client1 = googlemaps.Client(key=Google_Maps_KEY)
             for worker in workers_data['labors']:
                 is_available = worker.get('avalablity_status', False) is True
                 if is_available:
