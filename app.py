@@ -5,7 +5,6 @@ from flask_smorest import abort
 from dotenv import load_dotenv
 import googlemaps
 from haversine import haversine, Unit
-from geopy.distance import geodesic
 
 load_dotenv()
 
@@ -28,13 +27,14 @@ def fetch_workers_from_api():
             workers = []
             for worker in workers_data['labors']:
                 # Only add workers who have location and availability status
-                if 'location' in worker and worker['location'] and 'latitude' in worker['location'] and 'longitude' in worker['location']:
+                location = worker.get('location')
+                if location and 'latitude' in location and 'longitude' in location:
                     is_available = worker.get('avalablity_status', False) is True
                     if is_available:
                         workers.append({
                             'name': worker['name'],
                             'service_category': worker['designation'],
-                            'location': (worker['location']['latitude'], worker['location']['longitude']),
+                            'location': (location['latitude'], location['longitude']),
                             'ratePerHour': worker['ratePerHour'],
                             'phone': worker['mobile_number'],
                             'address': worker['address']
@@ -78,6 +78,8 @@ def get_nearby_workers():
                 nearby_workers.append(worker)
 
     return {'nearby_workers': nearby_workers}
+
+
 
 @app.post("/navigation")
 def get_directions():
