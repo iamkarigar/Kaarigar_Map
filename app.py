@@ -1,47 +1,57 @@
 import os
 import requests
-from pymongo import MongoClient
-from flask import Flask ,request
+from flask import Flask, request, jsonify
 from flask_smorest import abort
 from dotenv import load_dotenv
 import googlemaps
-from olamaps import Client
 from haversine import haversine, Unit
 from geopy.distance import geodesic
 
 load_dotenv()
 
 app = Flask(__name__)
-MONGODB_URI = os.getenv('MONGODB_URI')
-OLA_MAPS_KEY = os.getenv('OLA_MAPS_KEY')
 Google_Maps_KEY = os.getenv('Google_Maps_KEY')
-client = MongoClient(MONGODB_URI)
-databases = client.list_database_names()
-db = client['test']
-labor_collection = db.get_collection('labors')
-workers = []
-for worker in labor_collection.find():
-    if 'location' in worker and 'latitude' in worker['location'] and 'longitude' in worker['location']:
-        is_available = worker.get('avalablity_status', False) is True
-        if is_available:
-            workers.append({
-                'name': worker['name'],
-                'service_category': worker['designation'],
-                'location': (worker['location']['latitude'], worker['location']['longitude']),
-                'ratePerHour': worker['ratePerHour'],
-                'phone': worker['phone'],
-                'address': worker['address']
-            })
+
+API_URL = "https://karigar-server-new.onrender.com/api/v1/labor/getAllLabors"
+
 @app.errorhandler(404)
 def not_found(error):
     return jsonify({"error": "Directions not found. Please check the locations and try again."}), 404
-    
+
+# Fetch workers data from API
+def fetch_workers_from_api():
+    try:
+        response = requests.get(API_URL)
+        response.raise_for_status()  # Raise an exception for HTTP errors
+        workers_data = response.json()
+        if workers_data['success']:
+            workers = []
+            for worker in workers_data['labors']:
+                # Only add workers who have location and availability status
+                if 'location' in worker and worker['location'] and 'latitude' in worker['location'] and 'longitude' in worker['location']:
+                    is_available = worker.get('avalablity_status', False) is True
+                    if is_available:
+                        workers.append({
+                            'name': worker['name'],
+                            'service_category': worker['designation'],
+                            'location': (worker['location']['latitude'], worker['location']['longitude']),
+                            'ratePerHour': worker['ratePerHour'],
+                            'phone': worker['mobile_number'],
+                            'address': worker['address']
+                        })
+            return workers
+        else:
+            return []
+    except requests.exceptions.RequestException as e:
+        print(f"Error fetching workers from API: {e}")
+        return []
+
 @app.post("/nearby_workers")
 def get_nearby_workers():
     user_data = request.get_json()
     if 'location' not in user_data or 'service_category' not in user_data:
         abort(404, message="Bad Request. User's location and service category are required.")
-
+    
     # Geocode the user's location
     client1 = googlemaps.Client(key=Google_Maps_KEY)
     geocode_results = client1.geocode(user_data['location'])
@@ -52,24 +62,22 @@ def get_nearby_workers():
         geocode_results[0]['geometry']['location']['lat'], 
         geocode_results[0]['geometry']['location']['lng']
     )
+    
+    # Fetch workers data from the API
+    workers = fetch_workers_from_api()
     nearby_workers = []
 
-    for worker in workers:  # Ensure this workers list is the one with correct data
+    for worker in workers:
         if worker['service_category'] == user_data['service_category']:
-            worker_address = worker['address']
-            geocode_results1 = client1.geocode(worker_address)
-            worker_coords = (
-                geocode_results1[0]['geometry']['location']['lat'],
-                geocode_results1[0]['geometry']['location']['lng']
-            )
+            # Calculate the distance between the user and the worker
+            worker_coords = worker['location']
             distance = haversine(user_coords, worker_coords, unit=Unit.KILOMETERS)
-
+            
             if distance <= 10:  # Example threshold for nearby workers (10 km)
                 worker['distance'] = distance
                 nearby_workers.append(worker)
 
     return {'nearby_workers': nearby_workers}
-
 
 @app.post("/navigation")
 def get_directions():
@@ -121,7 +129,6 @@ def get_directions():
         abort(404, description="Directions not found. Please check the locations and try again.")
     
     return {'distance': distance, 'directions': direction}
-
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 8000)), debug=False)
