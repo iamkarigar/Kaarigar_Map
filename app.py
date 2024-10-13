@@ -26,19 +26,35 @@ def fetch_workers_from_api():
         if workers_data['success']:
             workers = []
             for worker in workers_data['labors']:
-                # Only add workers who have location and availability status
-                location = worker.get('location')
-                if location and 'latitude' in location and 'longitude' in location:
-                    is_available = worker.get('avalablity_status', False) is True
-                    if is_available:
-                        workers.append({
-                            'name': worker['name'],
-                            'service_category': worker['designation'],
-                            'location': (location['latitude'], location['longitude']),
-                            'ratePerHour': worker['ratePerHour'],
-                            'phone': worker['mobile_number'],
-                            'address': worker['address']
-                        })
+                is_available = worker.get('avalablity_status', False) is True
+                if is_available:
+                    location = worker.get('location')
+                    if location and 'latitude' in location and 'longitude' in location:
+                        # Use existing latitude and longitude if available
+                        worker_coords = (location['latitude'], location['longitude'])
+                    else:
+                        # Geocode the worker's address if location is missing
+                        worker_address = f"{worker['address']['addressLine']}, {worker['address']['city']}, {worker['address']['state']} {worker['address']['pincode']}"
+                        geocode_results = client1.geocode(worker_address)
+                        
+                        if geocode_results:
+                            worker_coords = (
+                                geocode_results[0]['geometry']['location']['lat'],
+                                geocode_results[0]['geometry']['location']['lng']
+                            )
+                        else:
+                            # Skip worker if geocoding fails
+                            continue
+                    
+                    # Append the worker with either the existing or geocoded coordinates
+                    workers.append({
+                        'name': worker['name'],
+                        'service_category': worker['designation'],
+                        'location': worker_coords,
+                        'ratePerHour': worker['ratePerHour'],
+                        'phone': worker['mobile_number'],
+                        'address': worker['address']
+                    })
             return workers
         else:
             return []
