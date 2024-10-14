@@ -30,12 +30,13 @@ def fetch_workers_from_api():
                 is_available = worker.get('avalablity_status', False) is True
                 if is_available:
                     location = worker.get('location')
+                    worker_coords = None
+                    # Use existing latitude and longitude if available
                     if location and 'latitude' in location and 'longitude' in location:
-                        # Use existing latitude and longitude if available
                         worker_coords = (location['latitude'], location['longitude'])
                     else:
                         # Geocode the worker's address if location is missing
-                        worker_address = f"{worker['address']['addressLine']}, {worker['address']['city']}, {worker['address']['state']} {worker['address']['pincode']}"
+                        worker_address = f"{worker['address']['addressLine']}, {worker['address']['city']}, {worker['address']['state']},{worker['address']['pincode']}"
                         geocode_results = client1.geocode(worker_address)
                         
                         if geocode_results:
@@ -48,20 +49,22 @@ def fetch_workers_from_api():
                             continue
                     
                     # Append the worker with either the existing or geocoded coordinates
-                    workers.append({
-                        'name': worker['name'],
-                        'service_category': worker['designation'],
-                        'location': worker_coords,
-                        'ratePerHour': worker['ratePerHour'],
-                        'phone': worker['mobile_number'],
-                        'address': worker['address']
-                    })
+                    if worker_coords:
+                        workers.append({
+                            'name': worker['name'],
+                            'service_category': worker['designation'],
+                            'location': worker_coords,
+                            'ratePerHour': worker['ratePerHour'],
+                            'phone': worker['mobile_number'],
+                            'address': worker['address']
+                        })
             return workers
         else:
             return []
     except requests.exceptions.RequestException as e:
         print(f"Error fetching workers from API: {e}")
         return []
+
 
 @app.post("/nearby_workers")
 def get_nearby_workers():
