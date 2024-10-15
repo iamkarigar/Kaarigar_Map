@@ -68,7 +68,7 @@ def fetch_workers_from_api():
 
 def fetch_merchants_from_api():
     try:
-        response = requests.get(API_URL)
+        response = requests.get(url)
         response.raise_for_status()  # Raise an exception for HTTP errors
         merchants_data = response.json()
         if merchants_data['success']:
