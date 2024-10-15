@@ -9,7 +9,7 @@ from haversine import haversine, Unit
 load_dotenv()
 
 app = Flask(__name__)
-Google_Maps_KEY = os.getenv('Google_Maps_KEY')
+Google_Maps_KEY = "AIzaSyBskEE_RW6isVnvbkjbQVOWkT7GenScNUY"
 
 API_URL = "https://karigar-server-new.onrender.com/api/v1/labor/getAllLabors"
 MERCHANT_URL = "https://karigar-server-new.onrender.com/api/v1/merchent/getAllMerchents"  # Renamed for clarity
@@ -19,26 +19,33 @@ def not_found(error):
     return jsonify({"error": "Directions not found. Please check the locations and try again."}), 404
 
 # Fetch workers data from API
+# Fetch workers data from API
 def fetch_workers_from_api():
     try:
         response = requests.get(API_URL)
         response.raise_for_status()  # Raise exception for HTTP errors
         workers_data = response.json()
+        
         if workers_data.get('success'):
             workers = []
             client1 = googlemaps.Client(key=Google_Maps_KEY)
+            
             for worker in workers_data.get('labors', []):
                 is_available = worker.get('avalablity_status', False)
+                
                 if is_available:
                     location = worker.get('location')
                     worker_coords = None
+                    
                     # Use existing latitude and longitude if available
                     if location and 'latitude' in location and 'longitude' in location:
                         worker_coords = (location['latitude'], location['longitude'])
                     else:
                         # Geocode the worker's address if location is missing
-                        worker_address = f"{worker['address']['addressLine']}, {worker['address']['city']}, {worker['address']['state']}, {worker['address']['pincode']}"
+                        address = worker.get('address', {})
+                        worker_address = f"{address.get('addressLine', '')}, {address.get('city', '')}, {address.get('state', '')}, {address.get('pincode', '')}"
                         geocode_results = client1.geocode(worker_address)
+                        
                         if geocode_results:
                             worker_coords = (
                                 geocode_results[0]['geometry']['location']['lat'],
@@ -47,22 +54,34 @@ def fetch_workers_from_api():
                         else:
                             # Skip worker if geocoding fails
                             continue
+                    
+                    # Get the worker's name safely
+                    
                     # Append the worker with either the existing or geocoded coordinates
                     if worker_coords:
+                        worker_name = worker.get('name')  # No need for default, just check presence
+                        if not worker_name:
+                            print(f"Warning: 'name' is missing for worker: {worker}")  # Log the worker for debugging
+                            continue  # Skip this worker if no 'name' field is found
+                    
                         workers.append({
-                            'name': worker['name'],
-                            'service_category': worker['designation'],
+                            'name': worker_name,  # Use fetched worker name
+                            'service_category': worker.get('designation', 'Unknown'),  # Fallback to 'Unknown'
                             'location': worker_coords,
-                            'ratePerHour': worker['ratePerHour'],
-                            'phone': worker['mobile_number'],
-                            'address': worker['address']
+                            'ratePerHour': worker.get('ratePerHour', 'N/A'),  # Fallback to 'N/A'
+                            'phone': worker.get('mobile_number', 'N/A'),  # Fallback to 'N/A'
+                            'address': worker.get('address', {})  # Fallback to empty dict if missing
                         })
             return workers
         else:
+            print("API response was not successful.")
             return []
     except requests.exceptions.RequestException as e:
         print(f"Error fetching workers from API: {e}")
         return []
+
+
+
 
 # Fetch merchants data from API
 def fetch_merchants_from_api():
