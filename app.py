@@ -204,7 +204,7 @@ def nearby_merchants():
     if 'location' not in user_data:
         abort(404, message="Bad Request. User's location and service category are required.")
     client1 = googlemaps.Client(key=Google_Maps_KEY)
-    geocode_results = client1.geocode(user_location)
+    geocode_results = client1.geocode(user_data['location'])
     if not geocode_results:
         print("Geocode results not found for user's location.")
         return []
