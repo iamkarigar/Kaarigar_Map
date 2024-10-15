@@ -12,6 +12,7 @@ app = Flask(__name__)
 Google_Maps_KEY = os.getenv('Google_Maps_KEY')
 
 API_URL = "https://karigar-server-new.onrender.com/api/v1/labor/getAllLabors"
+url="https://karigar-server-new.onrender.com/api/v1/merchent/getAllMerchents"
 
 @app.errorhandler(404)
 def not_found(error):
@@ -63,6 +64,50 @@ def fetch_workers_from_api():
             return []
     except requests.exceptions.RequestException as e:
         print(f"Error fetching workers from API: {e}")
+        return []
+
+def fetch_merchants_from_api():
+     try:
+        response = requests.get(API_URL)
+        response.raise_for_status()  # Raise an exception for HTTP errors
+        merchants_data = response.json()
+        if merchants_data['success']:
+            merchants = []
+            client1 = googlemaps.Client(key=Google_Maps_KEY)
+            for merchant in merchants_data['merchants']:
+                if 'buisnessAddress' in merchant:
+                    try:
+                        merchant_address = f"{merchant['buisnessAddress']['addressLine']}, {merchant['buisnessAddress']['city']}, {merchant['buisnessAddress']['state']} {merchant['buisnessAddress']['pincode']}"
+                        print(f"Geocoding merchant {merchant['name']} with address: {merchant_address}")
+
+                        # Geocode the merchant address
+                        geocode_results = client1.geocode(merchant_address)
+                        if geocode_results:
+                            merchant_coords = (
+                                geocode_results[0]['geometry']['location']['lat'],
+                                geocode_results[0]['geometry']['location']['lng']
+                            )
+                            print(f"Geocoding successful for {merchant['name']}, Coordinates: {merchant_coords}")
+                        else:
+                            print(f"Geocoding failed for merchant {merchant['name']} at address: {merchant_address}")
+                            continue
+
+                        # Append the merchant with the geocoded coordinates
+                        merchants.append({
+                            'name': merchant['name'],
+                            'location': merchant_coords,
+                            'address': merchant['buisnessAddress']
+                        })
+                    except KeyError as ke:
+                        print(f"Missing address details for merchant {merchant['name']}: {ke}")
+                else:
+                    print("does not have a buisnessAddress.")
+            return merchants
+        else:
+            print("API request was not successful.")
+            return []
+    except requests.exceptions.RequestException as e:
+        print(f"Error fetching merchants from API: {e}")
         return []
 
 
@@ -151,6 +196,33 @@ def get_directions():
         abort(404, description="Directions not found. Please check the locations and try again.")
     
     return {'distance': distance, 'directions': direction}
+
+@app.post('/nearby_merchants')
+def nearby_merchants():
+    user_data = request.get_json()
+    if 'location' not in user_data:
+        abort(404, message="Bad Request. User's location and service category are required.")
+    client1 = googlemaps.Client(key=Google_Maps_KEY)
+    geocode_results = client1.geocode(user_location)
+    if not geocode_results:
+        print("Geocode results not found for user's location.")
+        return []
+
+    user_coords = (
+        geocode_results[0]['geometry']['location']['lat'],
+        geocode_results[0]['geometry']['location']['lng']
+    )
+
+    # Fetch merchants from API
+    merchants = fetch_merchants_from_api()
+    nearby_merchants = []
+    for merchant in merchants:
+        merchant_coords = merchant['location']
+        distance = haversine(user_coords, merchant_coords, unit=Unit.KILOMETERS)
+        if distance <= 10:  # Only include merchants within 10 kilometers
+            merchant['distance'] = distance
+            nearby_merchants.append(merchant)
+    return {"nearby_merchants":nearby_merchants}
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 8000)), debug=False)
