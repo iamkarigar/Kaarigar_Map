@@ -67,7 +67,7 @@ def fetch_workers_from_api():
         return []
 
 def fetch_merchants_from_api():
-     try:
+    try:
         response = requests.get(API_URL)
         response.raise_for_status()  # Raise an exception for HTTP errors
         merchants_data = response.json()
@@ -109,6 +109,7 @@ def fetch_merchants_from_api():
     except requests.exceptions.RequestException as e:
         print(f"Error fetching merchants from API: {e}")
         return []
+
 
 
 @app.post("/nearby_workers")
