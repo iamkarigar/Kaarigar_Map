@@ -9,7 +9,7 @@ from haversine import haversine, Unit
 load_dotenv()
 
 app = Flask(__name__)
-Google_Maps_KEY = os.getenv('Google_Maps_KEY')
+Google_Maps_KEY = "AIzaSyBskEE_RW6isVnvbkjbQVOWkT7GenScNUY"
 
 API_URL = "https://karigar-server-new.onrender.com/api/v1/labor/getAllLabors"
 MERCHANT_URL = "https://karigar-server-new.onrender.com/api/v1/merchent/getAllMerchents"  # Renamed for clarity
@@ -111,6 +111,7 @@ def fetch_merchants_from_api():
                         # Append the merchant with the geocoded coordinates
                         merchants.append({
                             'name': merchant['name'],
+                            'Id':merchant['_id'],
                             'location': merchant_coords,
                             'address': merchant['buisnessAddress']
                         })
@@ -204,25 +205,40 @@ def nearby_merchants():
     user_data = request.get_json()
     if 'location' not in user_data:
         abort(400, message="Bad Request. User's location is required.")
+    
     client1 = googlemaps.Client(key=Google_Maps_KEY)
+    
+    # Geocode the user's location
     geocode_results = client1.geocode(user_data['location'])
     if not geocode_results:
         print("Geocode results not found for user's location.")
         abort(404, message="Geocode results not found for user's location.")
+    
     user_coords = (
         geocode_results[0]['geometry']['location']['lat'],
         geocode_results[0]['geometry']['location']['lng']
     )
+
     # Fetch merchants from API
     merchants = fetch_merchants_from_api()
     nearby_merchants = []
+    
     for merchant in merchants:
         merchant_coords = merchant['location']
+        
+        # Calculate the distance between the user and the merchant
         distance = haversine(user_coords, merchant_coords, unit=Unit.KILOMETERS)
+        
         if distance <= 10:  # Only include merchants within 10 kilometers
             merchant['distance'] = distance
-            nearby_merchants.append(merchant)
+            nearby_merchants.append(merchants)
+    
+    if not nearby_merchants:
+        print("No merchants found within a 10 km radius.")
+    
     return {"nearby_merchants": nearby_merchants}
+
+
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 8000)), debug=False)
