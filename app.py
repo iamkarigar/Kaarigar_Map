@@ -231,7 +231,7 @@ def nearby_merchants():
         
         if distance <= 10:  # Only include merchants within 10 kilometers
             merchant['distance'] = distance
-            nearby_merchants.append(merchants)
+            nearby_merchants.append(merchant)
     
     if not nearby_merchants:
         print("No merchants found within a 10 km radius.")
