@@ -130,28 +130,48 @@ def fetch_merchants_from_api():
 @app.post("/nearby_workers")
 def get_nearby_workers():
     user_data = request.get_json()
-    if 'location' not in user_data or 'service_category' not in user_data:
-        abort(400, message="Bad Request. User's location and service category are required.")  # Changed status code to 400
+
+    # Check for required field 'location'
+    if 'location' not in user_data:
+        abort(400, description="Bad Request. User's location is required.")
+
     # Geocode the user's location
     client1 = googlemaps.Client(key=Google_Maps_KEY)
     geocode_results = client1.geocode(user_data['location'])
+    
     if not geocode_results:
-        abort(404, message="Geocode results not found.")
+        abort(404, description="Geocode results not found.")
+    
     user_coords = (
         geocode_results[0]['geometry']['location']['lat'],
         geocode_results[0]['geometry']['location']['lng']
     )
+
     # Fetch workers data from the API
     workers = fetch_workers_from_api()
     nearby_workers = []
+
+    # Check if 'service_category' is provided in user_data
+    service_category = user_data.get('service_category')
+
+    # Filter workers based on service category (if provided) and proximity
     for worker in workers:
-        if worker['service_category'] == user_data['service_category']:
-            # Calculate the distance between the user and the worker
-            worker_coords = worker['location']
-            distance = haversine(user_coords, worker_coords, unit=Unit.KILOMETERS)
-            if distance <= 10:  # Threshold for nearby workers (10 km)
+        worker_coords = worker['location']
+
+        # Calculate the distance between user and worker
+        distance = haversine(user_coords, worker_coords, unit=Unit.KILOMETERS)
+        
+        if distance <= 10:  # Threshold for nearby workers (10 km)
+            # If service_category is provided, filter by category
+            if service_category:
+                if worker['service_category'] == service_category:
+                    worker['distance'] = distance
+                    nearby_workers.append(worker)
+            else:
+                # If service_category is not provided, add all workers within distance
                 worker['distance'] = distance
                 nearby_workers.append(worker)
+
     return {'nearby_workers': nearby_workers}
 
 @app.post("/navigation")
