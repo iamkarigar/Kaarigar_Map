@@ -9,7 +9,7 @@ from haversine import haversine, Unit
 load_dotenv()
 
 app = Flask(__name__)
-Google_Maps_KEY = "AIzaSyBskEE_RW6isVnvbkjbQVOWkT7GenScNUY"
+Google_Maps_KEY = os.getenv('Google_Maps_KEY')
 
 API_URL = "https://karigar-server-new.onrender.com/api/v1/labor/getAllLabors"
 MERCHANT_URL = "https://karigar-server-new.onrender.com/api/v1/merchent/getAllMerchents"  # Renamed for clarity
