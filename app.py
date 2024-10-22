@@ -132,6 +132,7 @@ def fetch_architects_from_api():
                     # Append the architect with either the existing or geocoded coordinates
                     if architect_coords:
                         architects.append({
+                            'ID':architect.get('userId'),
                             'name': architect_name,
                             'service_category': 'Architect',  # Default to 'Architect'
                             'location': architect_coords,
