@@ -67,7 +67,7 @@ def fetch_workers_from_api():
                             continue  # Skip this worker if no 'name' field is found
                     
                         workers.append({
-                            'ID':worker.get('_id'),
+                            
                             'name': worker_name,  # Use fetched worker name
                             'service_category': worker.get('designation', 'Unknown'),  # Fallback to 'Unknown'
                             'location': worker_coords,
@@ -132,7 +132,7 @@ def fetch_architects_from_api():
                     # Append the architect with either the existing or geocoded coordinates
                     if architect_coords:
                         architects.append({
-                            'ID':architect.get('userId'),
+                           
                             'name': architect_name,
                             'service_category': 'Architect',  # Default to 'Architect'
                             'location': architect_coords,
