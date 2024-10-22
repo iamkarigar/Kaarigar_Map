@@ -13,6 +13,7 @@ Google_Maps_KEY = os.getenv('Google_Maps_KEY')
 
 API_URL = "https://karigar-server-new.onrender.com/api/v1/labor/getAllLabors"
 MERCHANT_URL = "https://karigar-server-new.onrender.com/api/v1/merchent/getAllMerchents"  # Renamed for clarity
+ARCHITECT_URL="https://karigar-server-new.onrender.com/api/v1/architect/getAllArchitects"
 
 @app.errorhandler(404)
 def not_found(error):
@@ -84,29 +85,32 @@ def fetch_workers_from_api():
 # Fetch architects data from API
 def fetch_architects_from_api():
     try:
-        response = requests.get(API_URL)
+        response = requests.get(ARCHITECT_URL)
         response.raise_for_status()
         architects_data = response.json()
 
+        # Check if the API response indicates success
         if architects_data.get('success'):
             architects = []
             client1 = googlemaps.Client(key=Google_Maps_KEY)
 
-            for labor in architects_data.get('labors', []):  # Adjusted to 'labors'
-                is_available = labor.get('avalablity_status', False)  # Adjusted to match 'avalablity_status'
+            # Iterate through 'architects' list from the API response
+            for architect in architects_data.get('architects', []):
+                is_available = architect.get('avalablity_status', False)
 
+                # Only process available architects
                 if is_available:
-                    location = labor.get('location')
+                    location = architect.get('location', {})
                     architect_coords = None
 
-                    # Use existing latitude and longitude if available
-                    if location and 'latitude' in location and 'longitude' in location:
+                    # Check if latitude and longitude are already provided
+                    if location.get('latitude') and location.get('longitude'):
                         architect_coords = (location['latitude'], location['longitude'])
                     else:
-                        # Geocode the labor's address if location is missing
-                        address = labor.get('address', {})
-                        labor_address = f"{address.get('addressLine', '')}, {address.get('city', '')}, {address.get('state', '')}, {address.get('pincode', '')}"
-                        geocode_results = client1.geocode(labor_address)
+                        # If coordinates are missing, attempt geocoding
+                        address = architect.get('workplaceAddress', {})
+                        architect_address = f"{address.get('addressLine', '').strip()}, {address.get('city', '').strip()}, {address.get('state', '').strip()}, {address.get('pincode', '').strip()}"
+                        geocode_results = client1.geocode(architect_address)
 
                         if geocode_results:
                             architect_coords = (
@@ -114,24 +118,24 @@ def fetch_architects_from_api():
                                 geocode_results[0]['geometry']['location']['lng']
                             )
                         else:
-                            # Skip labor if geocoding fails
+                            # Skip architect if geocoding fails
                             continue
 
-                    # Get the labor's name safely
-                    labor_name = labor.get('name')
-                    if not labor_name:
-                        print(f"Warning: 'name' is missing for labor: {labor}")
-                        continue  # Skip this labor if no 'name' field is found
+                    # Get the architect's name safely
+                    architect_name = architect.get('education', {}).get('degree', 'Architect')
+                    if not architect_name:
+                        print(f"Warning: 'name' is missing for architect: {architect}")
+                        continue  # Skip this architect if no 'name' field is found
 
-                    # Append the labor with either the existing or geocoded coordinates
+                    # Append the architect with either the existing or geocoded coordinates
                     if architect_coords:
                         architects.append({
-                            'name': labor_name,
-                            'service_category': labor.get('designation', 'Labor'),  # Default to 'Labor'
+                            'name': architect_name,
+                            'service_category': 'Architect',  # Default to 'Architect'
                             'location': architect_coords,
-                            'ratePerHour': labor.get('ratePerHour', 'N/A'),
-                            'phone': labor.get('mobile_number', 'N/A'),
-                            'address': labor.get('address', {})  # Fallback to empty dict if missing
+                            'ratePerHour': architect.get('ratePerHour', 'N/A'),
+                            'phone': architect.get('mobile_number', 'N/A'),
+                            'address': address  # Use workplace address directly
                         })
             return architects
         else:
@@ -140,6 +144,7 @@ def fetch_architects_from_api():
     except requests.exceptions.RequestException as e:
         print(f"Error fetching architects from API: {e}")
         return []
+
 
 
 
