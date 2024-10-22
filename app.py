@@ -19,7 +19,8 @@ ARCHITECT_URL="https://karigar-server-new.onrender.com/api/v1/architect/getAllAr
 def not_found(error):
     return jsonify({"error": "Directions not found. Please check the locations and try again."}), 404
 
-# Fetch workers data from API
+
+#Fetch workers data from API
 # Fetch workers data from API
 def fetch_workers_from_api():
     try:
@@ -66,6 +67,7 @@ def fetch_workers_from_api():
                             continue  # Skip this worker if no 'name' field is found
                     
                         workers.append({
+                            'ID':worker.get('_id'),
                             'name': worker_name,  # Use fetched worker name
                             'service_category': worker.get('designation', 'Unknown'),  # Fallback to 'Unknown'
                             'location': worker_coords,
