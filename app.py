@@ -124,7 +124,7 @@ def fetch_architects_from_api():
                             continue
 
                     # Get the architect's name safely
-                    architect_name = architect.get('userName')
+                    architect_name = architect.get('name')
                     if not architect_name:
                         print(f"Warning: 'name' is missing for architect: {architect}")
                         continue  # Skip this architect if no 'name' field is found
@@ -132,14 +132,21 @@ def fetch_architects_from_api():
                     # Append the architect with either the existing or geocoded coordinates
                     if architect_coords:
                         architects.append({
-                           'Id':architect.get('userId'),
+                            'Id': architect.get('_id'),  # Use the unique ID from the architect data
                             'name': architect_name,
                             'service_category': 'Architect',  # Default to 'Architect'
                             'location': architect_coords,
-                        
-                            'email':architect.get('email','N/A'),
+                            'email': architect.get('email', 'N/A'),
                             'phone': architect.get('mobile_number', 'N/A'),
-                            'address': address  # Use workplace address directly
+                            'address': {
+                                'addressLine': address.get('addressLine', 'N/A'),
+                                'city': address.get('city', 'N/A'),
+                                'state': address.get('state', 'N/A'),
+                                'pincode': address.get('pincode', 'N/A'),
+                            },
+                            'ratePerHour': architect.get('ratePerHour', 0),  # Include hourly rate if needed
+                            'experience': architect.get('experience', 0),  # Include experience if needed
+                            'overall_rating': architect.get('overall_rating', 0),  # Include rating if needed
                         })
             return architects
         else:
