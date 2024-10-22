@@ -111,7 +111,16 @@ def fetch_architects_from_api():
                     else:
                         # If coordinates are missing, attempt geocoding
                         address = architect.get('workplaceAddress', {})
-                        architect_address = f"{address.get('addressLine', '').strip()}, {address.get('city', '').strip()}, {address.get('state', '').strip()}, {address.get('pincode', '').strip()}"
+                        # Safely construct the address
+                        architect_address_parts = [
+                            address.get('addressLine', '').strip(),
+                            address.get('city', '').strip(),
+                            address.get('state', '').strip(),
+                            address.get('pincode', '').strip()
+                        ]
+                        # Filter out empty parts to avoid extra commas
+                        architect_address = ', '.join(filter(None, architect_address_parts))
+
                         geocode_results = client1.geocode(architect_address)
 
                         if geocode_results:
