@@ -225,8 +225,7 @@ def get_nearby_architects():
     architects = fetch_architects_from_api()
     nearby_architects = []
 
-    # Check if 'service_category' is provided in user_data
-    service_category = user_data.get('service_category', 'Architect')  # Default to 'Architect'
+
 
     # Filter architects based on proximity
     for architect in architects:
