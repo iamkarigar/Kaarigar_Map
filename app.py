@@ -222,7 +222,7 @@ def get_nearby_architects():
     
     if not geocode_results:
         abort(404, description="Geocode results not found.")
-    
+
     user_coords = (
         geocode_results[0]['geometry']['location']['lat'],
         geocode_results[0]['geometry']['location']['lng']
@@ -232,11 +232,18 @@ def get_nearby_architects():
     architects = fetch_architects_from_api()
     nearby_architects = []
 
-
+    # Check if architects data is valid
+    if not architects:
+        abort(404, description="No architects found.")
 
     # Filter architects based on proximity
     for architect in architects:
         architect_coords = architect['location']
+        
+        # Ensure architect_coords is a tuple with lat/lng
+        if not isinstance(architect_coords, tuple) or len(architect_coords) != 2:
+            print(f"Invalid coordinates for architect {architect['Id']}: {architect_coords}")
+            continue  # Skip this architect if coordinates are invalid
 
         # Calculate the distance between user and architect
         distance = haversine(user_coords, architect_coords, unit=Unit.KILOMETERS)
@@ -245,7 +252,11 @@ def get_nearby_architects():
             architect['distance'] = distance
             nearby_architects.append(architect)
 
+    if not nearby_architects:
+        return {'nearby_architects': [], 'message': 'No nearby architects found.'}
+
     return {'nearby_architects': nearby_architects}
+
 
 
 
