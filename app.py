@@ -81,52 +81,69 @@ def fetch_workers_from_api():
         return []
 
 
-
-
-# Fetch merchants data from API
-def fetch_merchants_from_api():
+# Fetch architects data from API
+def fetch_architects_from_api():
     try:
-        response = requests.get(MERCHANT_URL)  # Corrected URL
-        response.raise_for_status()  # Raise exception for HTTP errors
-        merchants_data = response.json()
-        if merchants_data.get('success'):
-            merchants = []
+        response = requests.get(API_URL)
+        response.raise_for_status()
+        architects_data = response.json()
+
+        if architects_data.get('success'):
+            architects = []
             client1 = googlemaps.Client(key=Google_Maps_KEY)
-            for merchant in merchants_data.get('merchants', []):
-                if 'buisnessAddress' in merchant:
-                    try:
-                        merchant_address = f"{merchant['buisnessAddress']['addressLine']}, {merchant['buisnessAddress']['city']}, {merchant['buisnessAddress']['state']} {merchant['buisnessAddress']['pincode']}"
-                        print(f"Geocoding merchant {merchant['name']} with address: {merchant_address}")
-                        # Geocode the merchant address
-                        geocode_results = client1.geocode(merchant_address)
+
+            for labor in architects_data.get('labors', []):  # Adjusted to 'labors'
+                is_available = labor.get('avalablity_status', False)  # Adjusted to match 'avalablity_status'
+
+                if is_available:
+                    location = labor.get('location')
+                    architect_coords = None
+
+                    # Use existing latitude and longitude if available
+                    if location and 'latitude' in location and 'longitude' in location:
+                        architect_coords = (location['latitude'], location['longitude'])
+                    else:
+                        # Geocode the labor's address if location is missing
+                        address = labor.get('address', {})
+                        labor_address = f"{address.get('addressLine', '')}, {address.get('city', '')}, {address.get('state', '')}, {address.get('pincode', '')}"
+                        geocode_results = client1.geocode(labor_address)
+
                         if geocode_results:
-                            merchant_coords = (
+                            architect_coords = (
                                 geocode_results[0]['geometry']['location']['lat'],
                                 geocode_results[0]['geometry']['location']['lng']
                             )
-                            print(f"Geocoding successful for {merchant['name']}, Coordinates: {merchant_coords}")
                         else:
-                            print(f"Geocoding failed for merchant {merchant['name']} at address: {merchant_address}")
+                            # Skip labor if geocoding fails
                             continue
-                        # Append the merchant with the geocoded coordinates
-                        merchants.append({
-                            'name': merchant['name'],
-                            'Id':merchant['_id'],
-                            'location': merchant_coords,
-                            'address': merchant['buisnessAddress']
+
+                    # Get the labor's name safely
+                    labor_name = labor.get('name')
+                    if not labor_name:
+                        print(f"Warning: 'name' is missing for labor: {labor}")
+                        continue  # Skip this labor if no 'name' field is found
+
+                    # Append the labor with either the existing or geocoded coordinates
+                    if architect_coords:
+                        architects.append({
+                            'name': labor_name,
+                            'service_category': labor.get('designation', 'Labor'),  # Default to 'Labor'
+                            'location': architect_coords,
+                            'ratePerHour': labor.get('ratePerHour', 'N/A'),
+                            'phone': labor.get('mobile_number', 'N/A'),
+                            'address': labor.get('address', {})  # Fallback to empty dict if missing
                         })
-                    except KeyError as ke:
-                        print(f"Missing address details for merchant {merchant['name']}: {ke}")
-                else:
-                    print(f"Merchant {merchant.get('name', 'Unknown')} does not have a business address.")
-            return merchants
+            return architects
         else:
-            print("API request was not successful.")
+            print("API response was not successful.")
             return []
     except requests.exceptions.RequestException as e:
-        print(f"Error fetching merchants from API: {e}")
+        print(f"Error fetching architects from API: {e}")
         return []
 
+
+
+# nearby workers code:-
 @app.post("/nearby_workers")
 def get_nearby_workers():
     user_data = request.get_json()
@@ -173,6 +190,95 @@ def get_nearby_workers():
                 nearby_workers.append(worker)
 
     return {'nearby_workers': nearby_workers}
+
+# nearby architect code:-
+@app.post("/nearby_architects")
+def get_nearby_architects():
+    user_data = request.get_json()
+
+    # Check for required field 'location'
+    if 'location' not in user_data:
+        abort(400, description="Bad Request. User's location is required.")
+
+    # Geocode the user's location
+    client1 = googlemaps.Client(key=Google_Maps_KEY)
+    geocode_results = client1.geocode(user_data['location'])
+    
+    if not geocode_results:
+        abort(404, description="Geocode results not found.")
+    
+    user_coords = (
+        geocode_results[0]['geometry']['location']['lat'],
+        geocode_results[0]['geometry']['location']['lng']
+    )
+
+    # Fetch architect data from the API
+    architects = fetch_architects_from_api()
+    nearby_architects = []
+
+    # Check if 'service_category' is provided in user_data
+    service_category = user_data.get('service_category', 'Architect')  # Default to 'Architect'
+
+    # Filter architects based on proximity
+    for architect in architects:
+        architect_coords = architect['location']
+
+        # Calculate the distance between user and architect
+        distance = haversine(user_coords, architect_coords, unit=Unit.KILOMETERS)
+        
+        if distance <= 10:  # Threshold for nearby architects (10 km)
+            architect['distance'] = distance
+            nearby_architects.append(architect)
+
+    return {'nearby_architects': nearby_architects}
+
+
+
+# Fetch merchants data from API
+def fetch_merchants_from_api():
+    try:
+        response = requests.get(MERCHANT_URL)  # Corrected URL
+        response.raise_for_status()  # Raise exception for HTTP errors
+        merchants_data = response.json()
+        if merchants_data.get('success'):
+            merchants = []
+            client1 = googlemaps.Client(key=Google_Maps_KEY)
+            for merchant in merchants_data.get('merchants', []):
+                if 'buisnessAddress' in merchant:
+                    try:
+                        merchant_address = f"{merchant['buisnessAddress']['addressLine']}, {merchant['buisnessAddress']['city']}, {merchant['buisnessAddress']['state']} {merchant['buisnessAddress']['pincode']}"
+                        print(f"Geocoding merchant {merchant['name']} with address: {merchant_address}")
+                        # Geocode the merchant address
+                        geocode_results = client1.geocode(merchant_address)
+                        if geocode_results:
+                            merchant_coords = (
+                                geocode_results[0]['geometry']['location']['lat'],
+                                geocode_results[0]['geometry']['location']['lng']
+                            )
+                            print(f"Geocoding successful for {merchant['name']}, Coordinates: {merchant_coords}")
+                        else:
+                            print(f"Geocoding failed for merchant {merchant['name']} at address: {merchant_address}")
+                            continue
+                        # Append the merchant with the geocoded coordinates
+                        merchants.append({
+                            'name': merchant['name'],
+                            'Id':merchant['_id'],
+                            'location': merchant_coords,
+                            'address': merchant['buisnessAddress']
+                        })
+                    except KeyError as ke:
+                        print(f"Missing address details for merchant {merchant['name']}: {ke}")
+                else:
+                    print(f"Merchant {merchant.get('name', 'Unknown')} does not have a business address.")
+            return merchants
+        else:
+            print("API request was not successful.")
+            return []
+    except requests.exceptions.RequestException as e:
+        print(f"Error fetching merchants from API: {e}")
+        return []
+
+
 
 @app.post("/navigation")
 def get_directions():
