@@ -67,7 +67,7 @@ def fetch_workers_from_api():
                             continue  # Skip this worker if no 'name' field is found
                     
                         workers.append({
-                            
+                            'Id':worker.get('_id'),
                             'name': worker_name,  # Use fetched worker name
                             'service_category': worker.get('designation', 'Unknown'),  # Fallback to 'Unknown'
                             'location': worker_coords,
@@ -124,7 +124,7 @@ def fetch_architects_from_api():
                             continue
 
                     # Get the architect's name safely
-                    architect_name = architect.get('education', {}).get('degree', 'Architect')
+                    architect_name = architect.get('userName')
                     if not architect_name:
                         print(f"Warning: 'name' is missing for architect: {architect}")
                         continue  # Skip this architect if no 'name' field is found
@@ -136,7 +136,8 @@ def fetch_architects_from_api():
                             'name': architect_name,
                             'service_category': 'Architect',  # Default to 'Architect'
                             'location': architect_coords,
-                            'ratePerHour': architect.get('ratePerHour', 'N/A'),
+                        
+                            'email':architect.get('email','N/A'),
                             'phone': architect.get('mobile_number', 'N/A'),
                             'address': address  # Use workplace address directly
                         })
