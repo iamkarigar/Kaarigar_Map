@@ -154,7 +154,8 @@ def fetch_architects_from_api():
                                 'pincode': address.get('pincode', 'N/A'),
                             },
                             'ratePerHour': architect.get('ratePerHour', 0),  # Include hourly rate if needed
-                            'experience': architect.get('experience', 0),  # Include experience if needed
+                            'experience': architect.get('experience', 0),  # Include experience if needed,
+                            'profileImage':architect.get('profileImage',0),
                             'overall_rating': architect.get('overall_rating', 0),  # Include rating if needed
                         })
             return architects
