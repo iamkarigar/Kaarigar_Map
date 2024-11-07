@@ -73,7 +73,9 @@ def fetch_workers_from_api():
                             'location': worker_coords,
                             'ratePerHour': worker.get('ratePerHour', 'N/A'),  # Fallback to 'N/A'
                             'phone': worker.get('mobile_number', 'N/A'),  # Fallback to 'N/A'
-                            'address': worker.get('address', {})  # Fallback to empty dict if missing
+                            'address': worker.get('address', {}),
+                            'profileImage':worker.get('profileImage'),
+                            'overall_rating':worker.get('overall_rating')  # Fallback to empty dict if missing
                         })
             return workers
         else:
@@ -301,7 +303,9 @@ def fetch_merchants_from_api():
                             'Id':merchant['_id'],
                             'location': merchant_coords,
                             'address': merchant['buisnessAddress'],
-                            'buisnessName':merchent.get('buisnessName')
+                            'buisnessName':merchant.get('buisnessName'),
+                            'shopImage':merchant.get('shopImage'),
+                            'overall_rating':merchant.get('overall_rating')
                         })
                     except KeyError as ke:
                         print(f"Missing address details for merchant {merchant['name']}: {ke}")
