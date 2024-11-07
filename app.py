@@ -300,7 +300,8 @@ def fetch_merchants_from_api():
                             'name': merchant['name'],
                             'Id':merchant['_id'],
                             'location': merchant_coords,
-                            'address': merchant['buisnessAddress']
+                            'address': merchant['buisnessAddress'],
+                            'buisnessName':merchent.get('buisnessName')
                         })
                     except KeyError as ke:
                         print(f"Missing address details for merchant {merchant['name']}: {ke}")
