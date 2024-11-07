@@ -257,7 +257,7 @@ def get_nearby_architects():
         # Calculate the distance between user and architect
         distance = haversine(user_coords, architect_coords, unit=Unit.KILOMETERS)
         
-        if distance <= 10:  # Threshold for nearby architects (10 km)
+        if distance <= 50:  # Threshold for nearby architects (10 km)
             architect['distance'] = distance
             nearby_architects.append(architect)
 
