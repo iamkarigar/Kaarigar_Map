@@ -396,7 +396,7 @@ def nearby_merchants():
         # Calculate the distance between the user and the merchant
         distance = haversine(user_coords, merchant_coords, unit=Unit.KILOMETERS)
         
-        if distance <= 10:  # Only include merchants within 10 kilometers
+        if distance <= 50:  # Only include merchants within 10 kilometers
             merchant['distance'] = distance
             nearby_merchants.append(merchant)
     
