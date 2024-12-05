@@ -8,7 +8,7 @@ from haversine import haversine, Unit
 
 load_dotenv()
 
-app = Flask(__name__)
+app = Flask(_name_)
 Google_Maps_KEY = os.getenv('Google_Maps_KEY')
 
 API_URL = "https://karigar-server-new.onrender.com/api/v1/labor/getAllLabors"
@@ -122,7 +122,9 @@ def fetch_architects_from_api():
                         ]
                         # Filter out empty parts to avoid extra commas
                         architect_address = ', '.join(filter(None, architect_address_parts))
-
+                        if not architect_address.strip():  # Check if address is empty
+                            print(f"Skipping architect due to empty address: {architect}")
+                            continue
                         geocode_results = client1.geocode(architect_address)
 
                         if geocode_results:
@@ -407,5 +409,5 @@ def nearby_merchants():
 
 
 
-if __name__ == "__main__":
+if _name_ == "_main_":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 8000)), debug=False)
