@@ -8,7 +8,7 @@ from haversine import haversine, Unit
 
 load_dotenv()
 
-app = Flask(_name_)
+app = Flask(__name__)
 Google_Maps_KEY = os.getenv('Google_Maps_KEY')
 
 API_URL = "https://karigar-server-new.onrender.com/api/v1/labor/getAllLabors"
@@ -409,5 +409,5 @@ def nearby_merchants():
 
 
 
-if _name_ == "_main_":
+if__name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 8000)), debug=False)
